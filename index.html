@@ -223,6 +223,45 @@
     font-size:28px !important; padding:16px !important; text-align:center;
     font-family:'Space Grotesk',sans-serif; font-weight:600;
   }
+
+  .icon-btn{
+    background: transparent; border: 1px solid var(--border); border-radius: 8px;
+    width: 38px; height: 38px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color: var(--text-dim); flex-shrink:0; padding:0;
+  }
+  .icon-btn:active{ transform: translateY(1px); }
+  .header-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .header-row .app-header{ padding: 8px 0; flex:1; }
+  .back-row{ display:flex; align-items:center; gap:10px; margin-bottom: 18px; }
+  .back-row .icon-btn{ }
+  .menu-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 15px 16px; cursor:pointer;
+  }
+  .menu-row + .menu-row{ border-top: 1px solid var(--border); }
+  .menu-row .menu-label{ font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:600; }
+  .menu-row .menu-sub{ font-size:11px; color: var(--text-faint); margin-top:2px; }
+  .menu-row .chev{ color: var(--text-faint); font-size:14px; }
+  .help-block{ margin-bottom: 22px; }
+  .help-block h3{ font-size:15px; margin: 0 0 6px; color: var(--accent); }
+  .help-block p{ font-size:13px; color: var(--text-dim); line-height:1.65; margin: 0 0 8px; }
+  .about-row{ display:flex; justify-content:space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size:13px; }
+  .about-row:last-child{ border-bottom:none; }
+  .about-row .k{ color: var(--text-faint); }
+  .about-row .v{ color: var(--text); font-family:'Space Grotesk',sans-serif; }
+
+  .view-toggle{ display:flex; gap:8px; margin-bottom:14px; }
+  .view-toggle .btn{ flex:1; }
+  .chart-wrap{ padding: 12px 4px 6px; }
+  .chart-detail{
+    margin-top: 10px; padding: 12px 14px; border-radius: 8px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    font-size: 13px; min-height: 20px;
+  }
+  .chart-detail .cd-empty{ color: var(--text-faint); font-size:12px; }
+  .chart-detail .cd-row{ display:flex; justify-content:space-between; padding: 3px 0; }
+  .chart-detail .cd-row .k{ color: var(--text-faint); }
+  .chart-detail .cd-row .v{ color: var(--text); font-family:'Space Grotesk',sans-serif; }
 </style>
 </head>
 <body>
@@ -231,8 +270,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 /* ===================== Version / build info ===================== */
-const APP_VERSION = 'v3';
-const APP_BUILD_DATE = 'Jul 20, 2026 11:00 PM EDT';
+const APP_VERSION = 'v5';
+const APP_BUILD_DATE = 'Jul 21, 2026 1:15 PM EDT';
 
 /* ===================== Constants ===================== */
 const SIZES = {
@@ -537,11 +576,13 @@ function importCsvFile(file){
 /* ===================== App state & render ===================== */
 const app = document.getElementById('app');
 let state = {
-  view: 'home',          // home | new | results
+  view: 'home',          // home | new | results | settings | help | about
   savedList: [],
   draft: null,           // in-progress new analysis (unsaved)
   viewingId: null,       // id of saved analysis currently open
   activeMethod: 'pairing',
+  resultsMode: 'table',  // table | chart  (Results screen display)
+  chartSelectedDiscIdx: null,
   loading: true
 };
 
@@ -579,27 +620,37 @@ function render(){
   if(state.view === 'home') return renderHome();
   if(state.view === 'new') return renderNew();
   if(state.view === 'results') return renderResults();
+  if(state.view === 'settings') return renderSettings();
+  if(state.view === 'help') return renderHelp();
+  if(state.view === 'about') return renderAbout();
 }
 
 /* ---------- Home ---------- */
+function gearSvg(){
+  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+  </svg>`;
+}
+function backArrowSvg(){
+  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>`;
+}
 function renderHome(){
   const list = state.savedList;
   app.innerHTML = `
-    <header class="app-header">
-      ${ringMarkSvg(13, 40)}
-      <div>
-        <h1 class="app-title">Disc Balance</h1>
-        <p class="app-sub">Optimal disc arrangement for smooth rotation</p>
-      </div>
-    </header>
-
-    <div class="btn-row" style="margin-bottom:18px;">
-      <button class="btn btn-primary" id="btn-new" style="flex:1;">+ New Analysis</button>
+    <div class="header-row">
+      <header class="app-header">
+        ${ringMarkSvg(13, 40)}
+        <div>
+          <h1 class="app-title">Disc Balance</h1>
+          <p class="app-sub">Optimal disc arrangement for smooth rotation</p>
+        </div>
+      </header>
+      <button class="icon-btn" id="btn-settings" aria-label="Settings">${gearSvg()}</button>
     </div>
+
     <div class="btn-row" style="margin-bottom:22px;">
-      <button class="btn" id="btn-export" ${list.length===0?'disabled':''} style="flex:1;">Export CSV</button>
-      <button class="btn" id="btn-import" style="flex:1;">Import CSV</button>
-      <input type="file" id="file-import" accept=".csv,text/csv">
+      <button class="btn btn-primary" id="btn-new" style="flex:1;">+ New Analysis</button>
     </div>
 
     ${list.length === 0 ? `
@@ -628,25 +679,8 @@ function renderHome(){
     <div class="footer">Disc Balance ${APP_VERSION} &middot; built ${APP_BUILD_DATE}</div>
   `;
 
+  document.getElementById('btn-settings').onclick = () => { state.view='settings'; render(); };
   document.getElementById('btn-new').onclick = () => { state.view='new'; state.draft=null; render(); };
-  document.getElementById('btn-export').onclick = () => {
-    if(state.savedList.length) exportCsv(state.savedList);
-  };
-  document.getElementById('btn-import').onclick = () => document.getElementById('file-import').click();
-  document.getElementById('file-import').onchange = async (e)=>{
-    const file = e.target.files[0];
-    if(!file) return;
-    try{
-      const imported = await importCsvFile(file);
-      for(const a of imported){ await Store.set(a); }
-      state.savedList = await Store.all();
-      render();
-      showToast(`Imported ${imported.length} analysis${imported.length===1?'':'es'}`);
-    } catch(err){
-      showToast('Import failed — check the CSV file');
-    }
-    e.target.value = '';
-  };
   list.forEach(a=>{
     const card = app.querySelector(`[data-open="${a.id}"]`);
     if(card){
@@ -655,6 +689,7 @@ function renderHome(){
         state.viewingId = a.id;
         state.draft = null;
         state.activeMethod = a.chosen || 'asEntered';
+        state.chartSelectedDiscIdx = null;
         state.view = 'results';
         render();
       });
@@ -669,6 +704,142 @@ function renderHome(){
       render();
     });
   });
+}
+
+/* ---------- Settings ---------- */
+function renderSettings(){
+  const hasSaved = state.savedList.length > 0;
+  app.innerHTML = `
+    <div class="back-row">
+      <button class="icon-btn" id="btn-back-settings" aria-label="Back">${backArrowSvg()}</button>
+      <h1 class="app-title" style="font-size:19px;">Settings</h1>
+    </div>
+
+    <div class="card" style="padding:0;">
+      <div class="menu-row" id="row-export">
+        <div>
+          <div class="menu-label">Export CSV</div>
+          <div class="menu-sub">${hasSaved ? `Save all ${state.savedList.length} analys${state.savedList.length===1?'is':'es'} to a file` : 'No saved analyses yet'}</div>
+        </div>
+        <span class="chev">&#8250;</span>
+      </div>
+      <div class="menu-row" id="row-import">
+        <div>
+          <div class="menu-label">Import CSV</div>
+          <div class="menu-sub">Load analyses from a previously exported file</div>
+        </div>
+        <span class="chev">&#8250;</span>
+      </div>
+      <div class="menu-row" id="row-help">
+        <div>
+          <div class="menu-label">Help</div>
+          <div class="menu-sub">How the balancing methods work</div>
+        </div>
+        <span class="chev">&#8250;</span>
+      </div>
+      <div class="menu-row" id="row-about">
+        <div>
+          <div class="menu-label">About</div>
+          <div class="menu-sub">Version, build date, author</div>
+        </div>
+        <span class="chev">&#8250;</span>
+      </div>
+    </div>
+    <input type="file" id="file-import" accept=".csv,text/csv">
+
+    <div class="footer">Disc Balance ${APP_VERSION} &middot; built ${APP_BUILD_DATE}</div>
+  `;
+
+  document.getElementById('btn-back-settings').onclick = () => { state.view='home'; render(); };
+  document.getElementById('row-export').onclick = () => {
+    if(!hasSaved){ showToast('No analyses to export yet'); return; }
+    exportCsv(state.savedList);
+  };
+  document.getElementById('row-import').onclick = () => document.getElementById('file-import').click();
+  document.getElementById('file-import').onchange = async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+      const imported = await importCsvFile(file);
+      for(const a of imported){ await Store.set(a); }
+      state.savedList = await Store.all();
+      render();
+      showToast(`Imported ${imported.length} analysis${imported.length===1?'':'es'}`);
+    } catch(err){
+      showToast('Import failed — check the CSV file');
+    }
+    e.target.value = '';
+  };
+  document.getElementById('row-help').onclick = () => { state.view='help'; render(); };
+  document.getElementById('row-about').onclick = () => { state.view='about'; render(); };
+}
+
+/* ---------- Help ---------- */
+function renderHelp(){
+  app.innerHTML = `
+    <div class="back-row">
+      <button class="icon-btn" id="btn-back-help" aria-label="Back">${backArrowSvg()}</button>
+      <h1 class="app-title" style="font-size:19px;">Help</h1>
+    </div>
+
+    <div class="help-block">
+      <h3>What's an imbalance score?</h3>
+      <p>Each disc sits at a fixed slot around the platter. The imbalance score measures how far the combined weight is from being perfectly centered — it adds up every disc's weight, factoring in its position around the ring. A score of 0 would mean perfect balance. Lower is always better, and it's only meaningful when comparing arrangements of the <em>same</em> set of discs.</p>
+    </div>
+
+    <div class="help-block">
+      <h3>As Entered</h3>
+      <p>This isn't an optimization at all — it's simply the imbalance score if the discs were placed in the exact order you typed them in. It's here as a baseline, so you can see how much the other methods actually improve on a naive, unplanned arrangement.</p>
+    </div>
+
+    <div class="help-block">
+      <h3>Heaviest–Lightest Pairing</h3>
+      <p>A fast, simple method: discs are sorted by weight, then spread around the ring so the heaviest and lightest discs land roughly opposite one another. It's the quickest of the three methods and usually gives a reasonable result, though it's rarely the very best possible arrangement.</p>
+    </div>
+
+    <div class="help-block">
+      <h3>Simulated Annealing</h3>
+      <p>This method starts from an arrangement and repeatedly tries swapping two discs, keeping the swap if it improves balance. Early on, it will also occasionally accept a swap that makes things slightly worse — this helps it avoid getting stuck on a decent-but-not-great arrangement. Over many tries, it settles on a strong result. In testing, this method typically produces the best or near-best score of the three.</p>
+    </div>
+
+    <div class="help-block">
+      <h3>Genetic Algorithm</h3>
+      <p>This method keeps a large group of candidate arrangements at once, combines pairs of the better ones to create new candidates, and occasionally introduces small random changes. Over many generations, the population tends to improve. It's a different search strategy than Simulated Annealing, and comparing the two can be a useful check — when they agree closely, you can be more confident you're close to the best possible arrangement.</p>
+    </div>
+
+    <div class="help-block">
+      <h3>Which one should I use?</h3>
+      <p>Simulated Annealing and the Genetic Algorithm usually land very close to each other and well ahead of the Pairing method. If they're nearly tied, either is a safe choice. If one is noticeably better, go with that one — the "Mark as chosen" button on each method's tab records your decision.</p>
+    </div>
+  `;
+  document.getElementById('btn-back-help').onclick = () => { state.view='settings'; render(); };
+}
+
+/* ---------- About ---------- */
+function renderAbout(){
+  app.innerHTML = `
+    <div class="back-row">
+      <button class="icon-btn" id="btn-back-about" aria-label="Back">${backArrowSvg()}</button>
+      <h1 class="app-title" style="font-size:19px;">About</h1>
+    </div>
+
+    <div style="text-align:center; margin: 8px 0 24px;">
+      ${ringMarkSvg(13, 56)}
+      <h2 class="display" style="font-size:20px; margin: 10px 0 2px;">Disc Balance</h2>
+      <p class="app-sub">Optimal disc arrangement for smooth rotation</p>
+    </div>
+
+    <div class="card">
+      <div class="about-row"><span class="k">Version</span><span class="v">${APP_VERSION}</span></div>
+      <div class="about-row"><span class="k">Build date</span><span class="v">${APP_BUILD_DATE}</span></div>
+      <div class="about-row"><span class="k">Author</span><span class="v">Franco</span></div>
+    </div>
+
+    <p style="font-size:12px; color:var(--text-faint); margin-top:16px; line-height:1.6;">
+      All data is stored on this device only and is never sent anywhere. Use Export CSV in Settings to back up or move your analyses.
+    </p>
+  `;
+  document.getElementById('btn-back-about').onclick = () => { state.view='settings'; render(); };
 }
 
 /* ---------- New analysis ---------- */
@@ -921,6 +1092,7 @@ function runDraft(){
   state.currentUnsaved = analysis;
   state.viewingId = null;
   state.activeMethod = 'asEntered';
+  state.chartSelectedDiscIdx = null;
   state.view = 'results';
   render();
 }
@@ -929,6 +1101,71 @@ function runDraft(){
 function getCurrentAnalysis(){
   if(state.currentUnsaved) return state.currentUnsaved;
   return state.savedList.find(a=>a.id === state.viewingId);
+}
+
+/* ---------- Spider chart ---------- */
+// Each spoke points to a ring position; its length is the disc's weight
+// (scaled to the heaviest disc). The circle at the end of each spoke is
+// labeled with the disc's original data-entry sequence number, not its
+// ring position — tapping it reveals the full detail below the chart.
+function buildSpiderChartSvg(a, method, selectedIdx){
+  const N = a.discCount;
+  const res = getMethodResult(a, method);
+  const weights = a.discs.map(d=>d.weight);
+  const maxWeight = Math.max(...weights, 0.0001);
+  const size = 300;
+  const center = size/2;
+  const maxRadius = size/2 - 30;
+
+  const points = res.arrangement.map((discIdx, pos)=>{
+    const ang = pos * 2*Math.PI/N - Math.PI/2;
+    const r = (weights[discIdx] / maxWeight) * maxRadius;
+    return { x: center + r*Math.cos(ang), y: center + r*Math.sin(ang), discIdx, pos };
+  });
+
+  let guides = '';
+  [0.33, 0.66, 1].forEach(f=>{
+    guides += `<circle cx="${center}" cy="${center}" r="${(maxRadius*f).toFixed(2)}" fill="none" stroke="var(--border)" stroke-width="1"/>`;
+  });
+
+  let spokes = '';
+  for(let pos=0; pos<N; pos++){
+    const ang = pos * 2*Math.PI/N - Math.PI/2;
+    const x = center + maxRadius*Math.cos(ang);
+    const y = center + maxRadius*Math.sin(ang);
+    spokes += `<line x1="${center}" y1="${center}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}" stroke="var(--border)" stroke-width="1"/>`;
+  }
+
+  const polyPoints = points.map(p=>`${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
+  const polygon = `<polygon points="${polyPoints}" fill="rgba(111,168,181,0.14)" stroke="var(--data)" stroke-width="1.5"/>`;
+
+  let dots = '';
+  points.forEach(p=>{
+    const isSel = p.discIdx === selectedIdx;
+    dots += `<g class="spider-point" data-disc-idx="${p.discIdx}">
+      <circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="11"
+        fill="${isSel ? 'var(--accent)' : 'var(--panel-2)'}"
+        stroke="${isSel ? 'var(--accent)' : 'var(--data)'}" stroke-width="2"/>
+      <text x="${p.x.toFixed(2)}" y="${p.y.toFixed(2)}" text-anchor="middle" dominant-baseline="central"
+        font-size="9.5" font-family="'IBM Plex Mono',monospace" font-weight="600"
+        fill="${isSel ? 'var(--accent-text)' : 'var(--text)'}">${p.discIdx+1}</text>
+    </g>`;
+  });
+
+  return `<svg viewBox="0 0 ${size} ${size}" style="width:100%; max-width:340px; height:auto; display:block; margin:0 auto;">
+    ${guides}${spokes}${polygon}${dots}
+  </svg>`;
+}
+function renderChartDetail(a, selectedIdx){
+  if(selectedIdx === null || selectedIdx === undefined){
+    return `<div class="chart-detail"><span class="cd-empty">Tap a point on the chart to see its details.</span></div>`;
+  }
+  const disc = a.discs[selectedIdx];
+  return `<div class="chart-detail">
+    <div class="cd-row"><span class="k">Entry #</span><span class="v">${selectedIdx+1}</span></div>
+    <div class="cd-row"><span class="k">Weight</span><span class="v">${disc.weight}</span></div>
+    <div class="cd-row"><span class="k">ID / label</span><span class="v">${escapeHtml(disc.label) || '&mdash;'}</span></div>
+  </div>`;
 }
 
 function renderResults(){
@@ -963,6 +1200,11 @@ function renderResults(){
     </div>
     <div class="score-note">Imbalance score — lower means better balanced. Tap a method to compare its full arrangement.</div>
 
+    <div class="view-toggle">
+      <button class="btn ${state.resultsMode!=='chart' ? 'btn-primary' : ''}" id="mode-table-view">Table</button>
+      <button class="btn ${state.resultsMode==='chart' ? 'btn-primary' : ''}" id="mode-chart-view">Chart</button>
+    </div>
+
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <strong style="font-family:'Space Grotesk',sans-serif; font-size:14px;">${METHOD_LABELS[method]}</strong>
@@ -970,26 +1212,33 @@ function renderResults(){
           ${a.chosen===method ? '✓ Chosen' : 'Mark as chosen'}
         </button>
       </div>
-      <table>
-        <thead><tr>
-          <th class="idx-col">Pos</th>
-          <th>Angle</th>
-          <th>Disc</th>
-          <th class="weight-col">Weight</th>
-        </tr></thead>
-        <tbody>
-          ${res.arrangement.map((discIdx, pos)=>{
-            const disc = a.discs[discIdx];
-            const angle = Math.round(pos * 360 / N);
-            return `<tr>
-              <td class="idx-col">${pos+1}</td>
-              <td style="color:var(--text-faint);">${angle}°</td>
-              <td>${escapeHtml(disc.label) || `<span style="color:var(--text-faint);">Disc ${discIdx+1}</span>`}</td>
-              <td class="weight-col" style="color:var(--data);">${disc.weight}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
+      ${state.resultsMode === 'chart' ? `
+        <div class="chart-wrap">
+          ${buildSpiderChartSvg(a, method, state.chartSelectedDiscIdx)}
+        </div>
+        ${renderChartDetail(a, state.chartSelectedDiscIdx)}
+      ` : `
+        <table>
+          <thead><tr>
+            <th class="idx-col">Pos</th>
+            <th>Angle</th>
+            <th>Disc</th>
+            <th class="weight-col">Weight</th>
+          </tr></thead>
+          <tbody>
+            ${res.arrangement.map((discIdx, pos)=>{
+              const disc = a.discs[discIdx];
+              const angle = Math.round(pos * 360 / N);
+              return `<tr>
+                <td class="idx-col">${pos+1}</td>
+                <td style="color:var(--text-faint);">${angle}°</td>
+                <td>${escapeHtml(disc.label) || `<span style="color:var(--text-faint);">Disc ${discIdx+1}</span>`}</td>
+                <td class="weight-col" style="color:var(--data);">${disc.weight}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `}
     </div>
 
     <div class="btn-row" style="margin-top:16px;">
@@ -1004,8 +1253,22 @@ function renderResults(){
   `;
 
   app.querySelectorAll('[data-method]').forEach(el=>{
-    el.addEventListener('click', ()=>{ state.activeMethod = el.getAttribute('data-method'); render(); });
+    el.addEventListener('click', ()=>{
+      state.activeMethod = el.getAttribute('data-method');
+      state.chartSelectedDiscIdx = null;
+      render();
+    });
   });
+  document.getElementById('mode-table-view').onclick = ()=>{ state.resultsMode='table'; render(); };
+  document.getElementById('mode-chart-view').onclick = ()=>{ state.resultsMode='chart'; render(); };
+  if(state.resultsMode === 'chart'){
+    app.querySelectorAll('.spider-point').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        state.chartSelectedDiscIdx = Number(el.getAttribute('data-disc-idx'));
+        render();
+      });
+    });
+  }
   document.getElementById('btn-choose').onclick = async ()=>{
     a.chosen = method;
     if(!isUnsaved) await Store.set(a);
