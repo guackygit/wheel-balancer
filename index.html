@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Disc Balance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14171A;
+    --panel: #1E2226;
+    --panel-2: #23272C;
+    --border: #2C3136;
+    --text: #E8E6E1;
+    --text-dim: #9AA0A6;
+    --text-faint: #656B71;
+    --accent: #C98A3E;
+    --accent-dim: #8C6231;
+    --accent-text: #17130C;
+    --data: #6FA8B5;
+    --good: #7FB069;
+    --bad: #C1554A;
+    --radius: 10px;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding-bottom: 48px;
+  }
+  h1,h2,h3, .display{
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .wrap{
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+  header.app-header{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 8px 0 22px;
+  }
+  .ring-mark{ flex-shrink:0; }
+  .app-title{ font-size: 22px; margin:0; color: var(--text); }
+  .app-sub{ font-size: 12px; color: var(--text-dim); margin: 2px 0 0; letter-spacing: 0.02em; }
+
+  .btn{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    padding: 11px 16px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .btn-primary{
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
+    font-weight: 600;
+  }
+  .btn-ghost{
+    background: transparent;
+  }
+  .btn-danger{
+    color: var(--bad);
+    border-color: #3A2321;
+  }
+  .btn-block{ width:100%; }
+  .btn-row{ display:flex; gap:10px; flex-wrap: wrap; }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  .card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .empty{
+    text-align:center;
+    color: var(--text-dim);
+    padding: 48px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .empty .display{ color: var(--text); font-size: 17px; display:block; margin-bottom: 6px; }
+
+  .analysis-card{ display:flex; justify-content:space-between; align-items:flex-start; gap: 10px; }
+  .analysis-name{ font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:600; margin:0 0 4px; }
+  .analysis-meta{ font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+  .badge{
+    display:inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .badge-chosen{ color: var(--good); border-color: #2C3D26; background: #1C2318; }
+  .badge-unchosen{ color: var(--text-faint); }
+
+  label{ display:block; font-size: 11px; color: var(--text-dim); margin-bottom: 6px; letter-spacing: 0.03em; text-transform: uppercase; }
+  input[type=text], input[type=number]{
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    padding: 11px 12px;
+  }
+  input:focus{ outline: 2px solid var(--accent-dim); outline-offset: 1px; }
+  input.invalid{ border-color: var(--bad); }
+  .field{ margin-bottom: 16px; }
+
+  .size-picker{ display:flex; gap:8px; margin-bottom: 4px; }
+  .size-btn{
+    flex:1;
+    text-align:center;
+    padding: 14px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    cursor:pointer;
+  }
+  .size-btn .n{ font-family:'Space Grotesk',sans-serif; font-size: 20px; font-weight:700; display:block; color: var(--text); }
+  .size-btn .lbl{ font-size: 10px; color: var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; }
+  .size-btn.active{ border-color: var(--accent); background: #241C10; }
+  .size-btn.active .n{ color: var(--accent); }
+
+  table{ width:100%; border-collapse: collapse; font-size: 13px; }
+  th{
+    text-align:left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-faint);
+    font-weight:500;
+    padding: 6px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  td{ padding: 7px 6px; border-bottom: 1px solid #22262A; vertical-align:middle; }
+  tr:last-child td{ border-bottom:none; }
+  .idx-col{ color: var(--text-faint); width: 28px; }
+  td input[type=text]{ padding: 7px 8px; font-size:13px; }
+  td input[type=number]{ padding: 7px 8px; font-size:13px; }
+  .weight-col{ width: 100px; }
+
+  .tabs{ display:flex; gap:6px; margin-bottom: 12px; }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding: 10px 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    cursor:pointer;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .tab.active{ border-color: var(--data); color: var(--text); background:#182226; }
+  .tab .score{ display:block; font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color: var(--data); margin-top:2px; }
+  .tab.active .score{ color: var(--data); }
+  .tab .chosen-dot{ color: var(--good); }
+
+  .score-note{ font-size:11px; color: var(--text-faint); margin: -6px 0 14px; }
+
+  .section-title{ font-size: 13px; color: var(--text-dim); margin: 22px 0 10px; text-transform:uppercase; letter-spacing:0.04em; }
+  .section-title:first-child{ margin-top:0; }
+
+  .toast{
+    position: fixed; bottom: 18px; left:50%; transform: translateX(-50%);
+    background: var(--panel-2); border:1px solid var(--border); color: var(--text);
+    padding: 10px 16px; border-radius: 8px; font-size: 12px; z-index: 50;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .err-text{ color: var(--bad); font-size: 12px; margin-top: 6px; }
+  .footer{
+    text-align:center; color: var(--text-faint); font-size: 10px; margin-top: 36px; letter-spacing:0.03em;
+  }
+  a.linklike{ color: var(--data); cursor:pointer; text-decoration: underline; }
+  input[type=file]{ display:none; }
+
+  .mode-toggle{ margin: 14px 0 16px; }
+  .step-nav-strip{
+    display:flex; gap:6px; overflow-x:auto; padding: 2px 2px 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .step-pill{
+    flex-shrink:0; width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; border:1px solid var(--border); background: var(--panel-2);
+    color: var(--text-dim); cursor:pointer;
+  }
+  .step-pill.filled{ border-color: var(--data); color: var(--data); }
+  .step-pill.invalid{ border-color: var(--bad); color: var(--bad); }
+  .step-pill.current{ border-color: var(--accent); background:#241C10; color: var(--accent); font-weight:600; }
+  .step-card{ text-align:left; }
+  .step-counter{
+    font-family:'Space Grotesk',sans-serif; font-size:13px; color: var(--text-dim);
+    margin-bottom:16px; text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .step-weight-input{
+    font-size:28px !important; padding:16px !important; text-align:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:600;
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+/* ===================== Version / build info ===================== */
+const APP_VERSION = 'v3';
+const APP_BUILD_DATE = 'Jul 20, 2026 11:00 PM EDT';
+
+/* ===================== Constants ===================== */
+const SIZES = {
+  S: { label: 'Small',  count: 25 },
+  M: { label: 'Medium', count: 17 },
+  L: { label: 'Large',  count: 13 }
+};
+const METHOD_LABELS = {
+  asEntered: 'As Entered',
+  pairing:   'Heaviest–Lightest Pairing',
+  annealing: 'Simulated Annealing',
+  genetic:   'Genetic Algorithm'
+};
+
+/* ===================== Small utilities ===================== */
+function uid(){ return 'x' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+function randInt(n){ return Math.floor(Math.random()*n); }
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined,{ year:'numeric', month:'short', day:'numeric' }) + ' ' +
+         d.toLocaleTimeString(undefined,{ hour:'numeric', minute:'2-digit' });
+}
+function escapeHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ===================== Balancing algorithms ===================== */
+function unitVectorsFor(N){
+  const v = [];
+  for(let i=0;i<N;i++){
+    const ang = i * 2 * Math.PI / N;
+    v.push([Math.cos(ang), Math.sin(ang)]);
+  }
+  return v;
+}
+function imbalanceScore(arrangement, weights, unitVectors){
+  let sx=0, sy=0;
+  for(let i=0;i<arrangement.length;i++){
+    const w = weights[arrangement[i]];
+    sx += w * unitVectors[i][0];
+    sy += w * unitVectors[i][1];
+  }
+  return Math.sqrt(sx*sx + sy*sy);
+}
+// Heuristic 1: sort discs by weight, distribute around the ring using a coprime
+// step so consecutive-in-weight discs land roughly opposite one another.
+function pairingArrangement(discs){
+  const N = discs.length;
+  const order = discs.map((d,i)=>i).sort((a,b)=> discs[b].weight - discs[a].weight);
+  const step = Math.round(N/2);
+  const positions = new Array(N).fill(null);
+  let pos = 0;
+  for(let k=0;k<N;k++){
+    positions[pos] = order[k];
+    pos = (pos + step) % N;
+  }
+  return positions;
+}
+// Heuristic 2: simulated annealing local search over pairwise swaps.
+function simulatedAnnealing(discs, unitVectors, initial){
+  const N = discs.length;
+  const weights = discs.map(d=>d.weight);
+  let current = initial.slice();
+  let currentScore = imbalanceScore(current, weights, unitVectors);
+  let best = current.slice(), bestScore = currentScore;
+  let T = Math.max(currentScore, 1) ;
+  const coolingRate = 0.997;
+  const iterations = Math.max(8000, N * 900);
+  for(let iter=0; iter<iterations; iter++){
+    const i = randInt(N), j = randInt(N);
+    if(i===j) continue;
+    [current[i], current[j]] = [current[j], current[i]];
+    const newScore = imbalanceScore(current, weights, unitVectors);
+    const delta = newScore - currentScore;
+    if(delta < 0 || Math.random() < Math.exp(-delta / T)){
+      currentScore = newScore;
+      if(currentScore < bestScore){ bestScore = currentScore; best = current.slice(); }
+    } else {
+      [current[i], current[j]] = [current[j], current[i]];
+    }
+    T = Math.max(T * coolingRate, 1e-6);
+  }
+  return { arrangement: best, score: bestScore };
+}
+// Heuristic 3: genetic algorithm with order crossover + swap mutation.
+function geneticAlgorithm(discs, unitVectors){
+  const N = discs.length;
+  const weights = discs.map(d=>d.weight);
+  const popSize = Math.min(80, Math.max(40, N*3));
+  const generations = Math.min(400, Math.max(150, N*15));
+
+  function randomPerm(){
+    const a = [...Array(N).keys()];
+    for(let i=N-1;i>0;i--){ const j = randInt(i+1); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+  function fitness(p){ return imbalanceScore(p, weights, unitVectors); }
+  function tournament(pop, scores){
+    const a = randInt(pop.length), b = randInt(pop.length);
+    return scores[a] < scores[b] ? pop[a] : pop[b];
+  }
+  function orderCrossover(p1, p2){
+    const a = randInt(N), b = randInt(N);
+    const start = Math.min(a,b), end = Math.max(a,b);
+    const child = new Array(N).fill(null);
+    const used = new Set();
+    for(let i=start;i<=end;i++){ child[i]=p1[i]; used.add(p1[i]); }
+    let idx = (end+1) % N;
+    for(let i=0;i<N;i++){
+      const gene = p2[(end+1+i) % N];
+      if(!used.has(gene)){
+        child[idx] = gene; used.add(gene);
+        idx = (idx+1) % N;
+      }
+    }
+    return child;
+  }
+  function mutate(p){
+    if(Math.random() < 0.25){
+      const i = randInt(N), j = randInt(N);
+      [p[i],p[j]] = [p[j],p[i]];
+    }
+    return p;
+  }
+
+  let population = Array.from({length: popSize}, randomPerm);
+  let best = null, bestScore = Infinity;
+  for(let g=0; g<generations; g++){
+    const scores = population.map(fitness);
+    for(let i=0;i<population.length;i++){
+      if(scores[i] < bestScore){ bestScore = scores[i]; best = population[i].slice(); }
+    }
+    const sortedIdx = [...scores.keys()].sort((a,b)=>scores[a]-scores[b]);
+    const newPop = [population[sortedIdx[0]].slice(), population[sortedIdx[1]].slice()];
+    while(newPop.length < popSize){
+      const p1 = tournament(population, scores);
+      const p2 = tournament(population, scores);
+      newPop.push(mutate(orderCrossover(p1,p2)));
+    }
+    population = newPop;
+  }
+  return { arrangement: best, score: bestScore };
+}
+// "As Entered" isn't stored — it's just the identity arrangement (position i = disc i),
+// so it's always recomputed from the current disc list. This also means it's available
+// for analyses saved before this method existed.
+function getMethodResult(a, method){
+  if(method === 'asEntered'){
+    const N = a.discCount;
+    const arrangement = [...Array(N).keys()];
+    const uv = unitVectorsFor(N);
+    const weights = a.discs.map(d=>d.weight);
+    return { arrangement, score: imbalanceScore(arrangement, weights, uv) };
+  }
+  return a.results[method];
+}
+function runAllHeuristics(discs){
+  const N = discs.length;
+  const unitVectors = unitVectorsFor(N);
+  const weights = discs.map(d=>d.weight);
+  const pairingArr = pairingArrangement(discs);
+  const pairingScore = imbalanceScore(pairingArr, weights, unitVectors);
+  const sa = simulatedAnnealing(discs, unitVectors, pairingArr);
+  const ga = geneticAlgorithm(discs, unitVectors);
+  return {
+    pairing:   { arrangement: pairingArr,     score: pairingScore },
+    annealing: { arrangement: sa.arrangement, score: sa.score },
+    genetic:   { arrangement: ga.arrangement, score: ga.score }
+  };
+}
+
+/* ===================== Storage (persistent, on this device/browser) =====================
+   Uses the browser's localStorage, which is what actually persists data on a real
+   hosted site. All keys are prefixed "analysis:" so this app doesn't collide with
+   anything else that might be stored in the same browser. */
+const Store = {
+  async list(){
+    try{
+      return Object.keys(localStorage).filter(k => k.startsWith('analysis:'));
+    } catch(e){ return []; }
+  },
+  async get(key){
+    try{
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch(e){ return null; }
+  },
+  async set(analysis){
+    const key = 'analysis:' + analysis.id;
+    localStorage.setItem(key, JSON.stringify(analysis));
+  },
+  async delete(id){
+    try{ localStorage.removeItem('analysis:' + id); } catch(e){}
+  },
+  async all(){
+    const keys = await this.list();
+    const items = [];
+    for(const k of keys){
+      const a = await this.get(k);
+      if(a) items.push(a);
+    }
+    items.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+    return items;
+  }
+};
+
+/* ===================== CSV export / import ===================== */
+function analysesToCsvRows(analyses){
+  const rows = [];
+  for(const a of analyses){
+    // input rows: original entry order
+    a.discs.forEach((d, i)=>{
+      rows.push({
+        analysisId: a.id, name: a.name, createdAt: a.createdAt, size: a.size,
+        discCount: a.discCount, chosen: a.chosen || '', recordType: 'input',
+        position: i, discId: d.id, discLabel: d.label, discWeight: d.weight, score: ''
+      });
+    });
+    // method rows: ring position order
+    ['asEntered','pairing','annealing','genetic'].forEach(method=>{
+      const res = getMethodResult(a, method);
+      if(!res) return;
+      res.arrangement.forEach((discIdx, pos)=>{
+        const d = a.discs[discIdx];
+        rows.push({
+          analysisId: a.id, name: a.name, createdAt: a.createdAt, size: a.size,
+          discCount: a.discCount, chosen: a.chosen || '', recordType: method,
+          position: pos, discId: d.id, discLabel: d.label, discWeight: d.weight,
+          score: res.score
+        });
+      });
+    });
+  }
+  return rows;
+}
+function exportCsv(analyses){
+  const rows = analysesToCsvRows(analyses);
+  const csv = Papa.unparse(rows, { columns: ['analysisId','name','createdAt','size','discCount','chosen','recordType','position','discId','discLabel','discWeight','score'] });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'disc-balance-analyses.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function csvRowsToAnalyses(rows){
+  const groups = {};
+  rows.forEach(r=>{
+    if(!r.analysisId) return;
+    (groups[r.analysisId] = groups[r.analysisId] || []).push(r);
+  });
+  const analyses = [];
+  Object.values(groups).forEach(groupRows=>{
+    const first = groupRows[0];
+    const newAnalysisId = uid();
+    // rebuild discs from input rows, mapping old discId -> new discId
+    const inputRows = groupRows.filter(r=>r.recordType === 'input').sort((a,b)=>Number(a.position)-Number(b.position));
+    if(inputRows.length === 0) return;
+    const idMap = {};
+    const discs = inputRows.map(r=>{
+      const newId = uid();
+      idMap[r.discId] = newId;
+      return { id: newId, label: r.discLabel || '', weight: Number(r.discWeight) };
+    });
+    const results = {};
+    ['pairing','annealing','genetic'].forEach(method=>{
+      const methodRows = groupRows.filter(r=>r.recordType === method).sort((a,b)=>Number(a.position)-Number(b.position));
+      if(methodRows.length === discs.length){
+        const arrangement = methodRows.map(r=>{
+          const newId = idMap[r.discId];
+          return discs.findIndex(d=>d.id === newId);
+        });
+        const score = Number(methodRows[0].score);
+        results[method] = { arrangement, score };
+      }
+    });
+    analyses.push({
+      id: newAnalysisId,
+      name: (first.name || 'Imported analysis'),
+      size: first.size,
+      discCount: discs.length,
+      createdAt: first.createdAt || new Date().toISOString(),
+      discs, results,
+      chosen: ['asEntered','pairing','annealing','genetic'].includes(first.chosen) ? first.chosen : null
+    });
+  });
+  return analyses;
+}
+function importCsvFile(file){
+  return new Promise((resolve,reject)=>{
+    Papa.parse(file, {
+      header: true, skipEmptyLines: true,
+      complete: (res)=> resolve(csvRowsToAnalyses(res.data)),
+      error: reject
+    });
+  });
+}
+
+/* ===================== App state & render ===================== */
+const app = document.getElementById('app');
+let state = {
+  view: 'home',          // home | new | results
+  savedList: [],
+  draft: null,           // in-progress new analysis (unsaved)
+  viewingId: null,       // id of saved analysis currently open
+  activeMethod: 'pairing',
+  loading: true
+};
+
+function ringMarkSvg(n, size){
+  n = n || 8;
+  const r = size/2 - 4;
+  const cx = size/2, cy = size/2;
+  let dots = '';
+  for(let i=0;i<n;i++){
+    const ang = i*2*Math.PI/n - Math.PI/2;
+    const x = cx + r*Math.cos(ang), y = cy + r*Math.sin(ang);
+    dots += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="2.4" fill="var(--accent)"/>`;
+  }
+  return `<svg class="ring-mark" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="1.5"/>
+    ${dots}
+  </svg>`;
+}
+
+async function init(){
+  state.savedList = await Store.all();
+  state.loading = false;
+  render();
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=> t.remove(), 2200);
+}
+
+function render(){
+  if(state.view === 'home') return renderHome();
+  if(state.view === 'new') return renderNew();
+  if(state.view === 'results') return renderResults();
+}
+
+/* ---------- Home ---------- */
+function renderHome(){
+  const list = state.savedList;
+  app.innerHTML = `
+    <header class="app-header">
+      ${ringMarkSvg(13, 40)}
+      <div>
+        <h1 class="app-title">Disc Balance</h1>
+        <p class="app-sub">Optimal disc arrangement for smooth rotation</p>
+      </div>
+    </header>
+
+    <div class="btn-row" style="margin-bottom:18px;">
+      <button class="btn btn-primary" id="btn-new" style="flex:1;">+ New Analysis</button>
+    </div>
+    <div class="btn-row" style="margin-bottom:22px;">
+      <button class="btn" id="btn-export" ${list.length===0?'disabled':''} style="flex:1;">Export CSV</button>
+      <button class="btn" id="btn-import" style="flex:1;">Import CSV</button>
+      <input type="file" id="file-import" accept=".csv,text/csv">
+    </div>
+
+    ${list.length === 0 ? `
+      <div class="empty">
+        <span class="display">No analyses yet</span>
+        Start a new analysis to enter disc weights and calculate a balanced arrangement.
+      </div>
+    ` : list.map(a => `
+      <div class="card analysis-card" data-open="${a.id}">
+        <div>
+          <p class="analysis-name">${escapeHtml(a.name)}</p>
+          <div class="analysis-meta">
+            ${SIZES[a.size].label} &middot; ${a.discCount} discs<br>
+            ${fmtDate(a.createdAt)}
+          </div>
+        </div>
+        <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+          <span class="badge ${a.chosen ? 'badge-chosen' : 'badge-unchosen'}">
+            ${a.chosen ? '✓ ' + METHOD_LABELS[a.chosen] : 'No selection'}
+          </span>
+          <button class="btn btn-ghost btn-danger" data-delete="${a.id}" style="padding:6px 10px; font-size:11px;">Delete</button>
+        </div>
+      </div>
+    `).join('')}
+
+    <div class="footer">Disc Balance ${APP_VERSION} &middot; built ${APP_BUILD_DATE}</div>
+  `;
+
+  document.getElementById('btn-new').onclick = () => { state.view='new'; state.draft=null; render(); };
+  document.getElementById('btn-export').onclick = () => {
+    if(state.savedList.length) exportCsv(state.savedList);
+  };
+  document.getElementById('btn-import').onclick = () => document.getElementById('file-import').click();
+  document.getElementById('file-import').onchange = async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+      const imported = await importCsvFile(file);
+      for(const a of imported){ await Store.set(a); }
+      state.savedList = await Store.all();
+      render();
+      showToast(`Imported ${imported.length} analysis${imported.length===1?'':'es'}`);
+    } catch(err){
+      showToast('Import failed — check the CSV file');
+    }
+    e.target.value = '';
+  };
+  list.forEach(a=>{
+    const card = app.querySelector(`[data-open="${a.id}"]`);
+    if(card){
+      card.addEventListener('click', (e)=>{
+        if(e.target.closest('[data-delete]')) return;
+        state.viewingId = a.id;
+        state.draft = null;
+        state.activeMethod = a.chosen || 'asEntered';
+        state.view = 'results';
+        render();
+      });
+    }
+  });
+  app.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      const id = btn.getAttribute('data-delete');
+      await Store.delete(id);
+      state.savedList = state.savedList.filter(a=>a.id!==id);
+      render();
+    });
+  });
+}
+
+/* ---------- New analysis ---------- */
+function renderNew(){
+  const d = state.draft;
+  app.innerHTML = `
+    <header class="app-header">
+      ${ringMarkSvg(13, 34)}
+      <div><h1 class="app-title" style="font-size:19px;">New Analysis</h1></div>
+    </header>
+
+    <div class="section-title">Platter size</div>
+    <div class="size-picker">
+      ${Object.keys(SIZES).map(key => `
+        <div class="size-btn ${d && d.size===key ? 'active':''}" data-size="${key}">
+          <span class="n">${SIZES[key].count}</span>
+          <span class="lbl">${SIZES[key].label}</span>
+        </div>
+      `).join('')}
+    </div>
+
+    ${d ? `
+      <div class="field" style="margin-top:20px;">
+        <label>Analysis name</label>
+        <input type="text" id="name-input" value="${escapeHtml(d.name)}" placeholder="e.g. Batch 14 platter" enterkeyhint="next">
+      </div>
+
+      <div class="btn-row mode-toggle">
+        <button class="btn ${d.mode!=='table' ? 'btn-primary' : ''}" id="mode-step" style="flex:1;">Step Entry</button>
+        <button class="btn ${d.mode==='table' ? 'btn-primary' : ''}" id="mode-table" style="flex:1;">Table View</button>
+      </div>
+
+      ${d.mode === 'table' ? renderTableView(d) : renderStepView(d)}
+
+      ${d.error ? `<div class="err-text">${escapeHtml(d.error)}</div>` : ''}
+
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn" id="btn-cancel" style="flex:1;">Cancel</button>
+        <button class="btn btn-primary" id="btn-run" style="flex:2;">Run Analysis</button>
+      </div>
+    ` : `<p style="color:var(--text-dim); font-size:13px; margin-top:16px;">Choose a platter size to begin entering disc weights.</p>
+      <div class="btn-row" style="margin-top:18px;"><button class="btn" id="btn-cancel-early" style="flex:1;">Cancel</button></div>`}
+  `;
+
+  app.querySelectorAll('[data-size]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const key = el.getAttribute('data-size');
+      const count = SIZES[key].count;
+      state.draft = {
+        size: key,
+        name: '',
+        mode: 'step',
+        stepIndex: 0,
+        discs: Array.from({length: count}, ()=>({ id: uid(), label: '', weight: null }))
+      };
+      render();
+    });
+  });
+  const cancelEarly = document.getElementById('btn-cancel-early');
+  if(cancelEarly) cancelEarly.onclick = ()=>{ state.view='home'; render(); };
+
+  if(d){
+    const nameInput = document.getElementById('name-input');
+    nameInput.oninput = (e)=>{ d.name = e.target.value; };
+    nameInput.addEventListener('keydown', (e)=>{
+      if(e.key !== 'Enter') return;
+      e.preventDefault();
+      const target = d.mode === 'table'
+        ? app.querySelector('[data-weight="0"]')
+        : document.getElementById('step-weight');
+      if(target){ target.focus(); if(target.select) target.select(); }
+    });
+
+    document.getElementById('mode-step').onclick = ()=>{ d.mode='step'; render(); };
+    document.getElementById('mode-table').onclick = ()=>{ d.mode='table'; render(); };
+
+    if(d.mode === 'table'){
+      wireTableView(d);
+    } else {
+      wireStepView(d);
+    }
+
+    document.getElementById('btn-cancel').onclick = ()=>{ state.view='home'; state.draft=null; render(); };
+    document.getElementById('btn-run').onclick = ()=> runDraft();
+  }
+}
+
+function renderStepView(d){
+  const N = d.discs.length;
+  const disc = d.discs[d.stepIndex];
+  const isLast = d.stepIndex === N - 1;
+  return `
+    <div class="step-nav-strip">
+      ${d.discs.map((disc2, i)=>{
+        let cls = 'step-pill';
+        if(i === d.stepIndex) cls += ' current';
+        else if(disc2._invalid) cls += ' invalid';
+        else if(disc2.weight !== null && !isNaN(disc2.weight) && disc2.weight > 0) cls += ' filled';
+        return `<div class="${cls}" data-jump="${i}">${i+1}</div>`;
+      }).join('')}
+    </div>
+    <div class="card step-card">
+      <div class="step-counter">Disc ${d.stepIndex + 1} of ${N}</div>
+      <div class="field">
+        <label>Weight</label>
+        <input type="number" inputmode="decimal" step="any" min="0" id="step-weight"
+          class="step-weight-input ${disc._invalid ? 'invalid' : ''}"
+          value="${disc.weight === null ? '' : disc.weight}" placeholder="0.00" enterkeyhint="next">
+      </div>
+      <div class="field" style="margin-bottom:4px;">
+        <label>ID / label (optional)</label>
+        <input type="text" id="step-label" value="${escapeHtml(disc.label)}" placeholder="optional"
+          enterkeyhint="${isLast ? 'done' : 'next'}">
+      </div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn" id="step-back" ${d.stepIndex === 0 ? 'disabled' : ''} style="flex:1;">&#9664; Back</button>
+        <button class="btn btn-primary" id="step-next" style="flex:2;">${isLast ? 'Finish' : 'Next &#9654;'}</button>
+      </div>
+    </div>
+  `;
+}
+function wireStepView(d){
+  const weightInput = document.getElementById('step-weight');
+  const labelInput = document.getElementById('step-label');
+  weightInput.oninput = (e)=>{
+    const v = e.target.value;
+    d.discs[d.stepIndex].weight = v === '' ? null : Number(v);
+    d.discs[d.stepIndex]._invalid = false;
+  };
+  labelInput.oninput = (e)=>{ d.discs[d.stepIndex].label = e.target.value; };
+  weightInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); labelInput.focus(); labelInput.select(); }
+  });
+  labelInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('step-next').click(); }
+  });
+  document.getElementById('step-back').onclick = ()=>{
+    if(d.stepIndex > 0){ d.stepIndex -= 1; render(); }
+  };
+  document.getElementById('step-next').onclick = ()=> advanceStep(d);
+  app.querySelectorAll('[data-jump]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      d.stepIndex = Number(el.getAttribute('data-jump'));
+      render();
+    });
+  });
+  weightInput.focus();
+  weightInput.select();
+}
+function advanceStep(d){
+  const disc = d.discs[d.stepIndex];
+  const bad = disc.weight === null || isNaN(disc.weight) || disc.weight <= 0;
+  disc._invalid = bad;
+  if(bad){ render(); return; }
+  if(d.stepIndex === d.discs.length - 1){
+    runDraft();
+  } else {
+    d.stepIndex += 1;
+    render();
+  }
+}
+
+function renderTableView(d){
+  return `
+    <div class="section-title">Discs (${d.discs.length})</div>
+    <div class="card" id="table-card" style="padding:8px 10px;">
+      <table>
+        <thead><tr>
+          <th class="idx-col">#</th>
+          <th class="weight-col">Weight</th>
+          <th>ID / label <span style="text-transform:none;">(optional)</span></th>
+        </tr></thead>
+        <tbody>
+          ${d.discs.map((disc, i) => {
+            const isLastField = (i === d.discs.length - 1);
+            return `
+            <tr>
+              <td class="idx-col">${i+1}</td>
+              <td class="weight-col"><input type="number" inputmode="decimal" step="any" min="0" data-weight="${i}" class="${disc._invalid?'invalid':''}" value="${disc.weight===null?'':disc.weight}" placeholder="0.00" enterkeyhint="next"></td>
+              <td><input type="text" data-label="${i}" value="${escapeHtml(disc.label)}" placeholder="optional" enterkeyhint="${isLastField ? 'done' : 'next'}"></td>
+            </tr>
+          `;}).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+function wireTableView(d){
+  app.querySelectorAll('[data-label]').forEach(inp=>{
+    inp.oninput = (e)=>{ d.discs[Number(inp.getAttribute('data-label'))].label = e.target.value; };
+  });
+  app.querySelectorAll('[data-weight]').forEach(inp=>{
+    inp.oninput = (e)=>{
+      const idx = Number(inp.getAttribute('data-weight'));
+      const v = e.target.value;
+      d.discs[idx].weight = v === '' ? null : Number(v);
+      d.discs[idx]._invalid = false;
+    };
+  });
+  attachEnterNav(document.getElementById('table-card'));
+}
+
+// Pressing Enter/Return (or a mobile keypad's "next"/"done" key) moves to the next
+// field in the form, in the order the fields appear on screen. From the very last
+// field it runs the analysis instead.
+function attachEnterNav(container){
+  const inputs = Array.from(container.querySelectorAll('input[type=text], input[type=number]'));
+  inputs.forEach((inp, i) => {
+    inp.addEventListener('keydown', (e) => {
+      if(e.key !== 'Enter') return;
+      e.preventDefault();
+      const next = inputs[i+1];
+      if(next){ next.focus(); if(next.select) next.select(); }
+      else { inp.blur(); runDraft(); }
+    });
+  });
+}
+function runDraft(){
+  const d = state.draft;
+  d.error = null;
+  let firstInvalid = null;
+  d.discs.forEach(disc=>{
+    const bad = disc.weight === null || isNaN(disc.weight) || disc.weight <= 0;
+    disc._invalid = bad;
+    if(bad && firstInvalid === null) firstInvalid = true;
+  });
+  if(firstInvalid){
+    d.error = 'Enter a weight greater than 0 for every disc before running the analysis.';
+    d.mode = 'table';
+    render();
+    return;
+  }
+  if(!d.name || !d.name.trim()){
+    d.name = `${SIZES[d.size].label} analysis — ${fmtDate(new Date().toISOString())}`;
+  }
+  const discsClean = d.discs.map(x=>({ id:x.id, label:x.label.trim(), weight:x.weight }));
+  const results = runAllHeuristics(discsClean);
+  const analysis = {
+    id: uid(),
+    name: d.name.trim(),
+    size: d.size,
+    discCount: discsClean.length,
+    createdAt: new Date().toISOString(),
+    discs: discsClean,
+    results,
+    chosen: null,
+    _unsaved: true
+  };
+  state.draft = null;
+  state.currentUnsaved = analysis;
+  state.viewingId = null;
+  state.activeMethod = 'asEntered';
+  state.view = 'results';
+  render();
+}
+
+/* ---------- Results ---------- */
+function getCurrentAnalysis(){
+  if(state.currentUnsaved) return state.currentUnsaved;
+  return state.savedList.find(a=>a.id === state.viewingId);
+}
+
+function renderResults(){
+  const a = getCurrentAnalysis();
+  if(!a){ state.view='home'; render(); return; }
+  const N = a.discCount;
+  const method = state.activeMethod;
+  const res = getMethodResult(a, method);
+  const isUnsaved = !!a._unsaved;
+
+  app.innerHTML = `
+    <header class="app-header">
+      ${ringMarkSvg(N, 34)}
+      <div>
+        <h1 class="app-title" style="font-size:19px;">${escapeHtml(a.name)}</h1>
+        <p class="app-sub">${SIZES[a.size].label} &middot; ${N} discs &middot; ${fmtDate(a.createdAt)}</p>
+      </div>
+    </header>
+
+    ${isUnsaved ? `<div class="card" style="border-color:var(--accent-dim); background:#211A10; padding:10px 14px; margin-bottom:14px;">
+      <strong style="color:var(--accent); font-size:12px;">Not yet saved</strong>
+      <div style="color:var(--text-dim); font-size:12px; margin-top:2px;">Tap <strong>Save Analysis</strong> below to keep this. Leaving without saving will discard it.</div>
+    </div>` : ''}
+
+    <div class="tabs">
+      ${Object.keys(METHOD_LABELS).map(m => `
+        <div class="tab ${method===m?'active':''}" data-method="${m}">
+          ${a.chosen===m ? '<span class="chosen-dot">✓</span> ' : ''}${shortLabel(m)}
+          <span class="score">${getMethodResult(a, m).score.toFixed(3)}</span>
+        </div>
+      `).join('')}
+    </div>
+    <div class="score-note">Imbalance score — lower means better balanced. Tap a method to compare its full arrangement.</div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <strong style="font-family:'Space Grotesk',sans-serif; font-size:14px;">${METHOD_LABELS[method]}</strong>
+        <button class="btn ${a.chosen===method?'btn-primary':''}" id="btn-choose" style="padding:7px 12px; font-size:11px;">
+          ${a.chosen===method ? '✓ Chosen' : 'Mark as chosen'}
+        </button>
+      </div>
+      <table>
+        <thead><tr>
+          <th class="idx-col">Pos</th>
+          <th>Angle</th>
+          <th>Disc</th>
+          <th class="weight-col">Weight</th>
+        </tr></thead>
+        <tbody>
+          ${res.arrangement.map((discIdx, pos)=>{
+            const disc = a.discs[discIdx];
+            const angle = Math.round(pos * 360 / N);
+            return `<tr>
+              <td class="idx-col">${pos+1}</td>
+              <td style="color:var(--text-faint);">${angle}°</td>
+              <td>${escapeHtml(disc.label) || `<span style="color:var(--text-faint);">Disc ${discIdx+1}</span>`}</td>
+              <td class="weight-col" style="color:var(--data);">${disc.weight}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn" id="btn-back" style="flex:1;">${isUnsaved ? 'Discard' : 'Back to list'}</button>
+      ${isUnsaved
+        ? `<button class="btn btn-primary" id="btn-save" style="flex:1;">Save Analysis</button>`
+        : `<button class="btn btn-danger" id="btn-delete" style="flex:1;">Delete Analysis</button>`
+      }
+    </div>
+
+    <div class="footer">Disc Balance ${APP_VERSION} &middot; built ${APP_BUILD_DATE}</div>
+  `;
+
+  app.querySelectorAll('[data-method]').forEach(el=>{
+    el.addEventListener('click', ()=>{ state.activeMethod = el.getAttribute('data-method'); render(); });
+  });
+  document.getElementById('btn-choose').onclick = async ()=>{
+    a.chosen = method;
+    if(!isUnsaved) await Store.set(a);
+    render();
+  };
+  document.getElementById('btn-back').onclick = ()=>{
+    if(isUnsaved){
+      const ok = window.confirm('This analysis hasn\'t been saved yet. Discard it?');
+      if(!ok) return;
+    }
+    state.currentUnsaved = null;
+    state.viewingId = null;
+    state.view = 'home';
+    render();
+  };
+  if(isUnsaved){
+    document.getElementById('btn-save').onclick = async ()=>{
+      delete a._unsaved;
+      await Store.set(a);
+      state.savedList = await Store.all();
+      state.currentUnsaved = null;
+      state.viewingId = a.id;
+      showToast('Analysis saved');
+      render();
+    };
+  } else {
+    document.getElementById('btn-delete').onclick = async ()=>{
+      await Store.delete(a.id);
+      state.savedList = state.savedList.filter(x=>x.id!==a.id);
+      state.viewingId = null;
+      state.view = 'home';
+      render();
+    };
+  }
+}
+function shortLabel(m){
+  if(m==='asEntered') return 'Entered';
+  if(m==='pairing') return 'Pairing';
+  if(m==='annealing') return 'Annealing';
+  if(m==='genetic') return 'Genetic';
+  return m;
+}
+
+/* ===================== Boot ===================== */
+init();
+</script>
+</body>
+</html>
